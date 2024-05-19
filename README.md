@@ -1,5 +1,5 @@
 # PPO for Beginners
-A PPO tutorial by Ericyang https://github.com/ericyangyu/PPO-for-Beginners
+A PPO tutorial by Ericyangyu https://github.com/ericyangyu/PPO-for-Beginners
 
 ## Usage
 ```
