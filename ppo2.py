@@ -81,8 +81,8 @@ class PPO:
 		i_so_far = 0 # Iterations ran so far
 		while t_so_far < total_timesteps:                                                                       # ALG STEP 2
 			# Autobots, roll out (just kidding, we're collecting our batch simulations here)
-			# batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_vals, batch_dones, batch_rews = self.rolloutV2()                     # ALG STEP 3
-			batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout() 
+			batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens, batch_vals, batch_dones, batch_rews = self.rolloutV2()                     # ALG STEP 3
+			#batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout() 
 			# Calculate how many timesteps we collected this batch
 			t_so_far += np.sum(batch_lens)
 
@@ -94,11 +94,11 @@ class PPO:
 			self.logger['i_so_far'] = i_so_far
 
 			# Calculate advantage at k-th iteration
-			V, _, _= self.evaluate(batch_obs, batch_acts)
-			A_k = batch_rtgs - V.detach()                                                                       # ALG STEP 5
+			#V, _, _= self.evaluate(batch_obs, batch_acts)
+			#A_k = batch_rtgs - V.detach()                                                                       # ALG STEP 5
 			
-			#A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
-			#V = self.critic(batch_obs).squeeze()
+			A_k = self.calculate_gae(batch_rews, batch_vals, batch_dones)
+			V = self.critic(batch_obs).squeeze()
 			batch_rtgs = V.detach() + A_k 
 
 			# One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
@@ -319,7 +319,8 @@ class PPO:
 		ep_rews = []
 		ep_vals = []
 		ep_dones = []
-
+		fl_con = []
+		fr_con = []
 		t = 0 # Keeps track of how many timesteps we've run so far this batch
 
 		# Keep simulating until we've run more than or equal to specified timesteps per batch
@@ -327,6 +328,8 @@ class PPO:
 			ep_rews = [] # rewards collected per episode
 			ep_vals = []
 			ep_dones = []
+			fl_con = []
+			fr_con = []
 
 			# Reset the environment. sNote that obs is short for observation. 
 			obs = self.env.reset()
@@ -343,6 +346,8 @@ class PPO:
 
 				# Track observations in this batch
 				batch_obs.append(obs)
+				fl_con.append(obs[8])
+				fr_con.append(obs[13])
 
 				# Calculate action and make a step in the env. 
 				# Note that rew is short for reward.
@@ -359,6 +364,9 @@ class PPO:
 
 				# If the environment tells us the episode is terminated, break
 				if done:
+					differnce = [abs(fl_con[i] - fr_con[i]) for i in range(len(fl_con))]
+					mean_difference = sum(differnce) / len(differnce)
+					ep_rews[-1] += .0 * mean_difference
 					break
 
 			# Track episodic lengths and rewards
@@ -485,12 +493,12 @@ class PPO:
 		self.max_timesteps_per_episode = 1600           # Max number of timesteps per episode
 		self.n_updates_per_iteration = 5                # Number of times to update actor/critic per iteration
 		self.lr = 0.005                                 # Learning rate of actor optimizer
-		self.gamma = 0.95                               # Discount factor to be applied when calculating Rewards-To-Go
+		self.gamma = 0.99                               # Discount factor to be applied when calculating Rewards-To-Go
 		self.clip = 0.2                                 # Recommended 0.2, helps define the threshold to clip the ratio during SGA
-		self.ent_coef = 1e-2                            # Coefficient for entropy loss               
+		self.ent_coef = 0.001                               # Coefficient for entropy loss               
 		self.max_grad_norm = 0.5                        # Maximum norm of the gradient allowed  
 		self.target_kl = 0.1                            # KL divergence              
-		self.lam  = 0.99                                # Lambda used in gae                             
+		self.lam  = 0.95                                # Lambda used in gae                             
 		self.num_minibatches = 5                        # Number of minibatches
 		# Miscellaneous parameters
 		self.render = True                              # If we should render during rollout

@@ -9,6 +9,7 @@ import torch
 
 from arguments import get_args
 from ppo2 import PPO
+from new_env import CustomBipedalWalker
 from network import FeedForwardNN
 from eval_policy import eval_policy
 
@@ -45,7 +46,7 @@ def train(env, hyperparameters, actor_model, critic_model):
 	# Train the PPO model with a specified total timesteps
 	# NOTE: You can change the total timesteps here, I put a big number just because
 	# you can kill the process whenever you feel like PPO is converging
-	model.learn(total_timesteps=5_000_000)
+	model.learn(total_timesteps=10e7)
 
 def test(env, actor_model):
 	"""
@@ -108,8 +109,8 @@ def main(args):
 	# Creates the environment we'll be running. If you want to replace with your own
 	# custom environment, note that it must inherit Gym and have both continuous
 	# observation and action spaces.
-	env = gym.make('BipedalWalker-v3')
-
+	env = gym.make('BipedalWalkerHardcore-v3')
+	# env = CustomBipedalWalker()
 	# Train or test, depending on the mode specified
 	if args.mode == 'train':
 		train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model)
